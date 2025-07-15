@@ -85,7 +85,15 @@ const renderBoard = () => {
         });
     });
     
+    if(playerRole === 'black'){
+        chessboard.classList.add('flipped');
+    }
+    else{
+        chessboard.classList.remove('flipped');
+    }
 };
+
+
 
 /**
  * Handles a move on the chessboard.
