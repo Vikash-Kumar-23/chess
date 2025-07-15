@@ -45,25 +45,102 @@ const renderBoard = () => {
                     "piece",
                     square.color === "w" ? "white" : "black"
                 );
-                // TODO: Add piece symbol (e.g., Unicode character) to pieceElement
-                // TODO: Append pieceElement to squareElement
+                pieceElement.innerHTML = getPieceUnicode(square);
+                pieceElement.draggable = playerRole === square.color;
+
+                pieceElement.addEventListener("dragstart",(e) =>{
+                    if (pieceElement.draggable){
+                        draggedPiece = pieceElement;
+                        sourceSquare = {row:rowindex,column:squareindex};
+                        e.dataTransfer.setData("text/plain","");
+                    }
+                });
+
+                pieceElement.addEventListener("dragend",(e) =>{
+                    if (draggedPiece === pieceElement){
+                        draggedPiece = null;
+                        sourceSquare = null;
+                    }
+                });
+
+                // Append piece element to square
+                squareElement.appendChild(pieceElement);
             }
-            // TODO: Append squareElement to chessboard
+
+            squareElement.addEventListener("dragover",(e) =>{
+                e.preventDefault();
+            });
+
+            squareElement.addEventListener("drop",(e) =>{
+                e.preventDefault();
+                if (draggedPiece){
+                    const targetSource = {
+                        row: parseInt(squareElement.dataset.row),
+                        col: parseInt(squareElement.dataset.column),
+                    };
+                    handleMove(sourceSquare,targetSource);
+                }
+            });
+            chessboard.appendChild(squareElement);
         });
     });
+    
 };
 
 /**
  * Handles a move on the chessboard.
- * (Currently an empty placeholder function)
+ * Converts board coordinates to chess notation and attempts to make the move.
  */
-const handleMove = () => {};
+const handleMove = (source, target) => {
+    const sourceSquare = `${String.fromCharCode(97 + source.column)}${8 - source.row}`;
+    const targetSquare = `${String.fromCharCode(97 + target.col)}${8 - target.row}`;
+    
+    const move = {
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: 'q' // Always promote to queen for simplicity
+    };
+    
+    if (chess.move(move)) {
+        renderBoard();
+        socket.emit('move', move);
+    } else {
+        console.log('Invalid move');
+    }
+};
 
 /**
  * Returns the Unicode character for a given chess piece.
- * (Currently an empty placeholder function)
  */
-const getPieceUnicode = () =>{};
+const getPieceUnicode = (piece) => {
+    const unifiedPieces = {
+        'p': '♙', 'r': '♖', 'n': '♘', 'b': '♗', 'q': '♕', 'k': '♔'
+    };
+    return unifiedPieces[piece.type] || '';
+};
+
+
+
+// Socket event listeners
+socket.on('playerRole', function(role) {
+    playerRole = role;
+    renderBoard();
+});
+
+socket.on('spectatorRole', function() {
+    playerRole = null;
+    renderBoard();
+});
+
+socket.on('boardState', function(fen) {
+    chess.load(fen);
+    renderBoard();
+});
+
+socket.on('move', function(move) {
+    chess.move(move);
+    renderBoard();
+});
 
 // Initial rendering of the chessboard when the script loads
 renderBoard();

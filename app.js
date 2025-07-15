@@ -15,7 +15,6 @@ const io = socket(server);
 const chess = new Chess();
 // Object to store connected players
 let players = {};
-// Current player, 'w' for White, 'b' for Black
 let currentPlayer = "w";
 
 // Set the view engine to EJS
@@ -34,53 +33,42 @@ io.on("connection",function(uniquesocket){
 
   if(!players.white){
     players.white = uniquesocket.id;
-    uniquesocket.emit("platerRole","w");
-  }
-  else if (!players.black){
+    uniquesocket.emit("playerRole","w");
+  } else if (!players.black){
     players.black = uniquesocket.id;
-    uniquesocket.emit("platerRole","b");
-  }
-  else{
+    uniquesocket.emit("playerRole","b");
+  } else {
     uniquesocket.emit("spectatorRole");
   }
 
   uniquesocket.on("disconnect",function(){
     if (uniquesocket.id === players.white){
       delete players.white;
-    }
-    else if (uniquesocket.id === players.black){
+    } else if (uniquesocket.id === players.black){
       delete players.black;
-    }
-    else{
-      delete players.spectator;
     }
     console.log("A user disconnected");
   });
 
   uniquesocket.on("move", (move)=>{
     try{
-      if (chess.turn === 'w' && uniquesocket.id !== players.white){
-        return;
-      }
-      if (chess.turn === 'b' && uniquesocket.id !== players.black){
-        return;
-      }
+      if (chess.turn() === 'w' && uniquesocket.id !== players.white) return;
+      if (chess.turn() === 'b' && uniquesocket.id !== players.black) return;
+
       const result = chess.move(move);
-      if (result){
-        currentPlayer = chess.move(move);
+      if (result) {
+        currentPlayer = chess.turn();
         io.emit("move", move);
-        io.emit("boardState",chess.fen())
-      }
-      else{
-        console.log("invalidMove", move);
+        io.emit("boardState", chess.fen());
+      } else {
+        console.log("Invalid move:", move);
         uniquesocket.emit("invalidMove", move);
       }
-    }
-    catch(err){
-      console.log(err);
+    } catch(err){
+      console.error(err);
       uniquesocket.emit("invalidMove", move);
     }
-  })
+  });
 })
 
 server.listen(3000, () => {
