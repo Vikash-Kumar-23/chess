@@ -1,5 +1,6 @@
 .chessboard {
             display: grid;
+            /* 8x8 grid */
             grid-template-columns: repeat(8, minmax(0, 1fr));
             grid-template-rows: repeat(8, minmax(0, 1fr));
             width: 400px;
@@ -9,6 +10,7 @@
 
         .piece.white {
             color: white;
+            /* black drop shadow to the white pieces */
             filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
         }
 
